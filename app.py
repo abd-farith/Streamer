@@ -32,9 +32,10 @@ def remote_pause():
     return jsonify({"status": "error", "message": "Player not initialized"})
 
 @app.route('/seek/<int:seconds>')
-def remote_seek(new_time):
+def remote_seek(seconds):
     if player:
         current_time = player.get_time() // 1000
+        new_time = current_time + seconds
         player.set_time(new_time * 1000)
         return jsonify({"status": "success", "action": "seek", "time": new_time})
     return jsonify({"status": "error", "message": "Player not initialized"})
@@ -113,7 +114,7 @@ def main():
                 print(f"Current time: {current_time} seconds")
                 seek_time = int(input("Enter seconds to seek (positive for forward, negative for backward): "))
                 new_time = current_time + seek_time
-                send_command("seek", new_time)
+                send_command("seek", seek_time)
                 player.set_time(new_time * 1000)
                 print(f"Seeked to: {new_time} seconds locally and sent seek command to partner.")
             except ValueError:
