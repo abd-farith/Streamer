@@ -3,17 +3,20 @@ import os
 from flask import Flask, jsonify
 import requests
 from threading import Thread
+import warnings
 import logging
+from waitress import serve
 
 app = Flask(__name__)
 player = None
 partner_url = None
 
-# Configure logging for Flask
-log_file = "flask_logs.txt"
-logging.basicConfig(filename=log_file, level=logging.INFO, format="%(asctime)s - %(message)s")
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+app.logger.disabled = True
 
-# Routes for controlling playback
+warnings.filterwarnings("ignore")
+
 @app.route('/play')
 def remote_play():
     if player:
@@ -45,12 +48,7 @@ def remote_stop():
     return jsonify({"status": "error", "message": "Player not initialized"})
 
 def start_server():
-    # Suppress Flask logs in the terminal
-    import logging
-    log = logging.getLogger('werkzeug')
-    log.disabled = True
-    app.logger.disabled = True
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    serve(app, host='0.0.0.0', port=5000)
 
 def send_command(command, params=None):
     if not partner_url:
@@ -67,31 +65,26 @@ def send_command(command, params=None):
 
 def main():
     global player, partner_url
-    
-    # Get partner's URL
-    print("Enter partner's URL (e.g., https://2 if you're device A, https://1 if you're device B):")
+
+    print("Enter partner's URL:")
     partner_url = input().strip()
-    
-    # Start Flask server in a separate thread
+
     server_thread = Thread(target=start_server)
     server_thread.daemon = True
     server_thread.start()
-    
-    # Initialize VLC player
+
     file_path = input("Enter the full path to the video file: ")
     
     if not os.path.exists(file_path):
         print("File does not exist. Please check the path and try again.")
         return
     
-    # Initialize VLC instance and player
-    instance = vlc.Instance()
+    instance = vlc.Instance("--quiet") 
     player = instance.media_player_new()
     media = instance.media_new(file_path)
     player.set_media(media)
     
-    print(f"Playing: {file_path}")
-    player.play()  # Start playing immediately
+    print(f"File loaded: {file_path}")
     
     while True:
         print("\nControls:")
