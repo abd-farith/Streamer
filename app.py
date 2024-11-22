@@ -103,13 +103,13 @@ def main():
         choice = input("Enter your choice: ")
         
         if choice == "1":
-            player.pause()
             send_command("pause")
+            player.pause()
             print("Paused locally and sent pause command to partner.")
             
         elif choice == "2":
-            player.play()
             send_command("play")
+            player.play()
             print("Playing locally and sent play command to partner.")
             
         elif choice == "3":
@@ -118,15 +118,15 @@ def main():
                 print(f"Current time: {current_time} seconds")
                 seek_time = int(input("Enter seconds to seek (positive for forward, negative for backward): "))
                 new_time = current_time + seek_time
-                player.set_time(new_time * 1000)
                 send_command("seek", seek_time)
+                player.set_time(new_time * 1000)
                 print(f"Seeked to: {new_time} seconds locally and sent seek command to partner.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
                 
         elif choice == "4":
-            player.stop()
             send_command("stop")
+            player.stop()
             print("Stopped locally and sent stop command to partner.")
             
         elif choice == "5":
