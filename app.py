@@ -66,18 +66,21 @@ def send_command(command, params=None):
 def main():
     global player, partner_url
 
-    print("Enter partner's URL:")
-    partner_url = input().strip()
+    partner_url = input("Enter partner's URL: ").strip()
 
     server_thread = Thread(target=start_server)
     server_thread.daemon = True
     server_thread.start()
 
-    file_path = input("Enter the full path to the video file: ")
-    
+    file_path = input("Enter the full path to the video file: ").strip()
+
+    if file_path.startswith('"') and file_path.endswith('"'):
+        file_path = file_path[1:-1]
+
     if not os.path.exists(file_path):
         print("File does not exist. Please check the path and try again.")
         return
+
     
     instance = vlc.Instance("--quiet") 
     player = instance.media_player_new()
