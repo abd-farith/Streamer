@@ -34,10 +34,8 @@ def remote_pause():
 @app.route('/seek/<int:seconds>')
 def remote_seek(seconds):
     if player:
-        current_time = player.get_time() // 1000
-        new_time = current_time + seconds  # new absolute time
-        player.set_time(new_time * 1000)   # Seek to the new time
-        return jsonify({"status": "success", "action": "seek", "time": new_time})
+        player.set_time(seconds * 1000)  # Seek to the absolute time
+        return jsonify({"status": "success", "action": "seek", "time": seconds})
     return jsonify({"status": "error", "message": "Player not initialized"})
 
 @app.route('/stop')
@@ -81,7 +79,6 @@ def main():
         print("File does not exist. Please check the path and try again.")
         return
 
-    
     instance = vlc.Instance("--quiet") 
     player = instance.media_player_new()
     media = instance.media_new(file_path)
@@ -114,13 +111,12 @@ def main():
                 print(f"Current time: {current_time} seconds")
                 seek_time = int(input("Enter seconds to seek (positive for forward, negative for backward): "))
                 new_time = current_time + seek_time
-                send_command("seek", new_time)  # Send the new_time (absolute time) instead of seek_time
+                send_command("seek", new_time)  # Send the new_time (absolute time)
                 player.set_time(new_time * 1000)
                 print(f"Seeked to: {new_time} seconds locally and sent seek command to partner.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
-                
         elif choice == "4":
             send_command("stop")
             player.stop()
