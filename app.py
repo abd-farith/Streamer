@@ -6,6 +6,7 @@ from threading import Thread
 import warnings
 import logging
 from waitress import serve
+import time
 
 app = Flask(__name__)
 player = None
@@ -52,14 +53,19 @@ def send_command(command, params=None):
     if not partner_url:
         return
     
-    try:
-        if params:
-            url = f"{partner_url}/{command}/{params}"
-        else:
-            url = f"{partner_url}/{command}"
-        requests.get(url, timeout=1)
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to send command to partner: {command}. Error: {e}")
+    retries = 3
+    for attempt in range(retries):
+        try:
+            if params:
+                url = f"{partner_url}/{command}/{params}"
+            else:
+                url = f"{partner_url}/{command}"
+            requests.get(url, timeout=5)  # Increased timeout
+            return
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to send command to partner: {command}. Attempt {attempt + 1} of {retries}. Error: {e}")
+            if attempt < retries - 1:
+                time.sleep(0.5)  # Wait before retrying
 
 def main():
     global player, partner_url
