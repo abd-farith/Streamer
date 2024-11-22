@@ -3,11 +3,15 @@ import os
 from flask import Flask, jsonify
 import requests
 from threading import Thread
-import time
+import logging
 
 app = Flask(__name__)
 player = None
 partner_url = None
+
+# Configure logging for Flask
+log_file = "flask_logs.txt"
+logging.basicConfig(filename=log_file, level=logging.INFO, format="%(asctime)s - %(message)s")
 
 # Routes for controlling playback
 @app.route('/play')
@@ -41,7 +45,12 @@ def remote_stop():
     return jsonify({"status": "error", "message": "Player not initialized"})
 
 def start_server():
-    app.run(host='0.0.0.0', port=80, threaded=True)
+    # Suppress Flask logs in the terminal
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.disabled = True
+    app.logger.disabled = True
+    app.run(host='0.0.0.0', port=5000, threaded=True)
 
 def send_command(command, params=None):
     if not partner_url:
@@ -53,8 +62,8 @@ def send_command(command, params=None):
         else:
             url = f"{partner_url}/{command}"
         requests.get(url, timeout=1)
-    except requests.exceptions.RequestException:
-        print(f"Failed to send command to partner: {command}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send command to partner: {command}. Error: {e}")
 
 def main():
     global player, partner_url
@@ -63,20 +72,26 @@ def main():
     print("Enter partner's URL (e.g., https://2 if you're device A, https://1 if you're device B):")
     partner_url = input().strip()
     
-    # Start server in a separate thread
+    # Start Flask server in a separate thread
     server_thread = Thread(target=start_server)
     server_thread.daemon = True
     server_thread.start()
     
-    # Initialize video player
+    # Initialize VLC player
     file_path = input("Enter the full path to the video file: ")
     
     if not os.path.exists(file_path):
         print("File does not exist. Please check the path and try again.")
         return
     
-    player = vlc.MediaPlayer(file_path)
+    # Initialize VLC instance and player
+    instance = vlc.Instance()
+    player = instance.media_player_new()
+    media = instance.media_new(file_path)
+    player.set_media(media)
+    
     print(f"Playing: {file_path}")
+    player.play()  # Start playing immediately
     
     while True:
         print("\nControls:")
