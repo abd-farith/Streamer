@@ -67,6 +67,24 @@ def send_command(command, params=None):
             if attempt < retries - 1:
                 time.sleep(0.5)  # Wait before retrying
 
+def parse_time_to_seconds(hhmmss):
+    try:
+        parts = hhmmss.split(".")
+        hours = int(parts[0]) if len(parts) > 0 else 0
+        minutes = int(parts[1]) if len(parts) > 1 else 0
+        seconds = int(parts[2]) if len(parts) > 2 else 0
+        return hours * 3600 + minutes * 60 + seconds
+    except ValueError:
+        print("Invalid time format. Please use HH.MM.SS format.")
+        return None
+
+def format_time(milliseconds):
+    seconds = milliseconds // 1000
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
 def main():
     global player, partner_url
 
@@ -98,7 +116,9 @@ def main():
         print("2. Play")
         print("3. Seek (forward/backward)")
         print("4. Stop")
-        print("5. Exit")
+        print("5. Seek to HH.MM.SS")
+        print("6. Info (Total Duration, Current Position, Time Remaining)")
+        print("7. Exit")
         choice = input("Enter your choice: ")
         
         if choice == "1":
@@ -127,8 +147,30 @@ def main():
             send_command("stop")
             player.stop()
             print("Stopped locally and sent stop command to partner.")
-            
+
         elif choice == "5":
+            time_input = input("Enter time in HH.MM.SS format: ")
+            seek_seconds = parse_time_to_seconds(time_input)
+            if seek_seconds is not None:
+                send_command("seek", seek_seconds)
+                player.set_time(seek_seconds * 1000)
+                print(f"Seeked to {time_input} locally and sent seek command to partner.")
+
+        elif choice == "6":
+            if player:
+                duration = player.get_length()
+                current_time = player.get_time()
+                if duration > 0 and current_time >= 0:
+                    remaining_time = duration - current_time
+                    print(f"Total Duration: {format_time(duration)}")
+                    print(f"Current Position: {format_time(current_time)}")
+                    print(f"Time Remaining: {format_time(remaining_time)}")
+                else:
+                    print("Unable to retrieve media information. Ensure the media is loaded and playing.")
+            else:
+                print("Player is not initialized.")
+            
+        elif choice == "7":
             print("Exiting...")
             player.stop()
             break
